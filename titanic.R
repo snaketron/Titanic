@@ -1,90 +1,16 @@
-train <- read.csv(file = "/home/simo/Downloads/titanic/train.csv")
-test <- read.csv(file = "/home/simo/Downloads/titanic/test.csv")
+##################### inputs and dependencies #################
+train <- read.csv(file = "train.csv")
+test <- read.csv(file = "test.csv")
 
-train.names <- read.csv(file = "/home/simo/Downloads/titanic/train.csv")
-test.names <- read.csv(file = "/home/simo/Downloads/titanic/test.csv")
-
-################# DELETE BAD COLS #################
 require(randomForest)
 
 train$Survived <- as.factor(train$Survived)
 test$Survived <- NA
 test$Survived <- as.factor(test$Survived)
 
-################# NEW CABIN #################
-# summary(lm(Age~., data = train))
 
 
-################# NAME -> CABIN #################
-# index <- which(train$SibSp != 0 | train$Parch != 0)
-# names <- train$Name[index]
-# 
-# last.names <- c()
-# for(n in names) {
-#   last.names <- c(last.names, unlist(strsplit(as.character(n), split = ","))[1])
-# }
-# 
-# train$last.names <- NA
-# train$last.names[index] <- last.names
-# 
-# 
-# 
-# index <- which(test$SibSp != 0 | test$Parch != 0)
-# names <- test$Name[index]
-# 
-# last.names <- c()
-# for(n in names) {
-#   last.names <- c(last.names, unlist(strsplit(as.character(n), split = ","))[1])
-# }
-# 
-# test$last.names <- NA
-# test$last.names[index] <- last.names
-
-
-
-
-# require(plyr)
-# last.names.freq <- plyr::count(last.names)
-# common.last.names <- last.names.freq$x[which(last.names.freq$freq != 1)]
-# 
-# for(c in common.last.names) {
-#   x <- which(train$last.names %in% as.character(c))
-#   cabin.nr <- as.character(train$Cabin[x])
-# }
-
-
-
-
-
-##################### CABIN #################
-# multi.cabin <- which(grepl(pattern = paste(" +", sep = ''), x = as.character(train$Cabin), ignore.case = T))
-# 
-# for(mc in multi.cabin) {
-#   mc <- multi.cabin[4]
-#   
-#   cabin.names <- unlist(strsplit(as.character(train$Cabin[mc]), split = " "))
-#   
-#   last.name <- unlist(strsplit(as.character(train$Name[mc]), split = ","))[1]
-#   
-#   
-#   which(train$last.names %in% last.name)
-#   which(test$last.names %in% last.name)
-#   
-#   
-#   train$Cabin[which(train$last.names %in% last.name)]
-#   test$Cabin[which(test$last.names %in% last.name)]
-# }
-
-
-# for(ln in train$last.names) {
-#   
-# }
-# train$last.names
-
-
-
-
-##################### DISCRET CABIN #################
+##################### cluster cabins #################
 train$Cabin <- as.character(train$Cabin)
 decks <- LETTERS
 for(d in decks) {
@@ -104,7 +30,8 @@ rm(d)
 rm(decks)
 
 
-################# NAME -> AGE #################
+
+################# impute age #################
 train$Young <- F
 train$Young[which(grepl(pattern = paste("+", "Master\\.", "+", sep = ''), x = as.character(train$Name), ignore.case = T) == T)] <- T
 train$Young[which(grepl(pattern = paste("+", "Miss\\.", "+", sep = ''), x = as.character(train$Name), ignore.case = T) == T)] <- T
@@ -113,9 +40,6 @@ test$Young <- F
 test$Young[which(grepl(pattern = paste("+", "Master\\.", "+", sep = ''), x = as.character(test$Name), ignore.case = T) == T)] <- T
 test$Young[which(grepl(pattern = paste("+", "Miss\\.", "+", sep = ''), x = as.character(test$Name), ignore.case = T) == T)] <- T
 
-
-
-################# IMPUTE AGE #################
 summary(lm(Age~., data = train))
 
 temp <- rbind(train, test)
@@ -138,7 +62,7 @@ rm(rf.imput)
 
 
 
-################ OPTIMIZE LEVELS ###############
+################ relevel ###############
 levels(test$Sex) <- levels(train$Sex)
 levels(test$cabin.binary) <- levels(train$cabin.binary)
 levels(test$Embarked) <- levels(train$Embarked)
@@ -150,7 +74,10 @@ test$Young <- as.factor(test$Young)
 levels(test$Young) <- levels(train$Young)
 levels(test$Cabin) <- levels(train$Cabin)
 
-################# REMOVE bad predictors #################
+
+
+
+################# remove bad cols #################
 train$Name <- NULL
 test$Name <- NULL
 
@@ -159,15 +86,6 @@ test$Ticket <- NULL
 
 train$PassengerId <- NULL
 test$PassengerId <- NULL
-
-# train$SibSp <- NULL
-# test$SibSp <- NULL
-
-# train$Parch <- NULL
-# test$Parch <- NULL
-# 
-# train$Embarked <- NULL
-# test$Embarked <- NULL
 
 
 
@@ -470,3 +388,64 @@ test <- temp.test
 
 
 
+################# NAME -> CABIN #################
+# index <- which(train$SibSp != 0 | train$Parch != 0)
+# names <- train$Name[index]
+# 
+# last.names <- c()
+# for(n in names) {
+#   last.names <- c(last.names, unlist(strsplit(as.character(n), split = ","))[1])
+# }
+# 
+# train$last.names <- NA
+# train$last.names[index] <- last.names
+# 
+# 
+# 
+# index <- which(test$SibSp != 0 | test$Parch != 0)
+# names <- test$Name[index]
+# 
+# last.names <- c()
+# for(n in names) {
+#   last.names <- c(last.names, unlist(strsplit(as.character(n), split = ","))[1])
+# }
+# 
+# test$last.names <- NA
+# test$last.names[index] <- last.names
+
+
+
+
+# require(plyr)
+# last.names.freq <- plyr::count(last.names)
+# common.last.names <- last.names.freq$x[which(last.names.freq$freq != 1)]
+# 
+# for(c in common.last.names) {
+#   x <- which(train$last.names %in% as.character(c))
+#   cabin.nr <- as.character(train$Cabin[x])
+# }
+
+##################### CABIN #################
+# multi.cabin <- which(grepl(pattern = paste(" +", sep = ''), x = as.character(train$Cabin), ignore.case = T))
+# 
+# for(mc in multi.cabin) {
+#   mc <- multi.cabin[4]
+#   
+#   cabin.names <- unlist(strsplit(as.character(train$Cabin[mc]), split = " "))
+#   
+#   last.name <- unlist(strsplit(as.character(train$Name[mc]), split = ","))[1]
+#   
+#   
+#   which(train$last.names %in% last.name)
+#   which(test$last.names %in% last.name)
+#   
+#   
+#   train$Cabin[which(train$last.names %in% last.name)]
+#   test$Cabin[which(test$last.names %in% last.name)]
+# }
+
+
+# for(ln in train$last.names) {
+#   
+# }
+# train$last.names
