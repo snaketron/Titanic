@@ -50,15 +50,25 @@ test$Young <- F
 test$Young[which(grepl(pattern = paste("+", "Master\\.", "+", sep = ''), x = as.character(test$Name), ignore.case = T) == T)] <- T
 test$Young[which(grepl(pattern = paste("+", "Miss\\.", "+", sep = ''), x = as.character(test$Name), ignore.case = T) == T)] <- T
 
-summary(lm(Age~., data = train))
+# summary(lm(Age~., data = train))
 
 temp <- rbind(train, test)
 temp <- temp[, c("Age", "Pclass", "SibSp", "Young", "Sex")]
 
-rf.imput <- randomForest(Age~., data = temp, ntree = 2000, na.action = na.omit)
-to.imput <- temp[which(is.na(temp$Age)), ]
-x <- predict(object = rf.imput, newdata = to.imput, type = "response")
-temp$Age[which(is.na(temp$Age))] <- x
+age.predicts <- c()
+for(i in 1:100) {
+  train.temp <- temp[!is.na(temp$Age), ]
+  test.temp <- temp[is.na(temp$Age), ]
+  
+  rf.imput <- randomForest(y = train.temp$Age, x = train.temp[, -1], ntree = 2000, na.action = na.omit)
+  x <- predict(object = rf.imput, newdata = test.temp[, -1], type = "response")
+  age.predicts <- rbind(age.predicts, x)
+  
+  cat("i:", i, "\n")
+  
+}
+temp$Age[which(is.na(temp$Age))] <- apply(age.predicts, MARGIN = 2, FUN = median)
+
 
 
 #updated train
@@ -69,7 +79,10 @@ rm(x)
 rm(to.imput)
 rm(temp)
 rm(rf.imput)
-
+rm(test.temp)
+rm(train.temp)
+rm(age.predicts)
+rm(i)
 
 
 
@@ -118,11 +131,52 @@ for(c in colnames(train)[-1]) {
 
 
 # learn
-svm <- e1071::svm(Survived~., data = train, type = "C-classification", cost = 10, gamma = 0.1)
+svm <- e1071::svm(Survived~., data = train, type = "C-classification", cost = 100, gamma = 0.01)
 length(which(as.numeric(as.character(svm$fitted))-as.numeric(as.character(train$Survived)) != 0))/nrow(train)
 
 
 # get bad data
+predict <- predict(object = svm, newdata = test[, -9], type = "response")
+predict <- as.numeric(as.character(predict))
+predict <- c(predict[1:152], 1, predict[153:length(predict)])
+
+# export
+export.svm <- data.frame(PassengerId = pass.id, Survived = predict, row.names = NULL)
+write.table(export.svm, file = "svm.csv", quote = F, sep = ",", row.names = F, col.names = T)
+
+
+
+
+
+# learn better
+train$Young <- NULL
+test$Young <- NULL
+
+
+train$Embarked <- NULL
+test$Embarked <- NULL
+
+
+train$Embarked <- NULL
+test$Embarked <- NULL
+
+
+svm <- e1071::svm(Survived~., data = train, type = "C-classification", cost = 100, gamma = 0.01)
+length(which(as.numeric(as.character(svm$fitted))-as.numeric(as.character(train$Survived)) != 0))/nrow(train)
+
+
+# get bad data
+predict <- predict(object = svm, newdata = test[, -9], type = "response")
+predict <- as.numeric(as.character(predict))
+predict <- c(predict[1:152], 1, predict[153:length(predict)])
+
+# export
+export.svm <- data.frame(PassengerId = pass.id, Survived = predict, row.names = NULL)
+write.table(export.svm, file = "svm.csv", quote = F, sep = ",", row.names = F, col.names = T)
+
+
+
+
 
 
 svm.bad <- e1071::svm(Survived~., data = bad[, -c(2, 8, 9, 7, 6, 5)], type = "C-classification", cost = 1e-04, gamma = 1e-06)
@@ -130,8 +184,10 @@ svm.bad <- e1071::svm(Survived~., data = bad[, -c(2, 8, 9, 7, 6, 5)], type = "C-
 length(which(as.numeric(as.character(svm.bad$fitted))-as.numeric(as.character(bad$Survived)) != 0))/nrow(bad)
 
 
-# export
-export.svm <- data.frame(PassengerId = pass.id, Survived = preds.export, row.names = NULL)
-write.table(export.svm, file = "svm.2.csv", quote = F, sep = ",", row.names = F, col.names = T)
+
+
+
+
+
 
 
